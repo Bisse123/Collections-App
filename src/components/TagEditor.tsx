@@ -67,6 +67,7 @@ export function TagEditor({ tags, onChange, suggestions }: TagEditorProps) {
         onChangeText={setDraft}
         onSubmitEditing={handleSubmitEditing}
         placeholder="Add a tag"
+        accessibilityLabel="New tag"
         placeholderTextColor={colors.textMuted}
         autoCapitalize="none"
         autoCorrect={false}

@@ -44,4 +44,17 @@ export const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
+  deleteButton: {
+    marginTop: spacing.xl,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.danger,
+  },
+  deleteText: {
+    color: colors.danger,
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });

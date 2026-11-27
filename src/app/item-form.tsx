@@ -1,15 +1,13 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { PhotoField } from '../components/PhotoField';
 import { TagEditor } from '../components/TagEditor';
-import { createItem, getItem, listItems, updateItem } from '../db/repository';
+import { createItem, getItem, listItems, updateItem } from '../data/collections';
 import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { showSaveError } from '../lib/errors';
 import { countTags } from '../lib/tags';
-import { deleteImage } from '../storage/images';
 import { colors } from '../theme';
 import { styles } from '../styles/screens/itemForm.styles';
 
@@ -19,10 +17,9 @@ import { styles } from '../styles/screens/itemForm.styles';
  * @returns The screen element.
  */
 export default function ItemFormScreen() {
-  const db = useSQLiteContext();
   const params = useLocalSearchParams<{ collectionId: string; itemId?: string }>();
-  const collectionId = Number(params.collectionId);
-  const itemId = params.itemId ? Number(params.itemId) : null;
+  const collectionId = params.collectionId;
+  const itemId = params.itemId ?? null;
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -30,24 +27,24 @@ export default function ItemFormScreen() {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const photo = usePhotoPicker();
-  const { setSavedImageName } = photo;
+  const { setSavedImageId } = photo;
 
   useEffect(() => {
-    listItems(db, collectionId).then((items) =>
+    listItems(collectionId).then((items) =>
       setSuggestions(countTags(items).map(({ tag }) => tag)),
     );
     if (itemId === null) {
       return;
     }
-    getItem(db, itemId).then((item) => {
+    getItem(itemId).then((item) => {
       if (item) {
         setTitle(item.title);
         setDescription(item.description ?? '');
         setTags(item.tags);
-        setSavedImageName(item.imageName);
+        setSavedImageId(item.imageId);
       }
     });
-  }, [db, collectionId, itemId, setSavedImageName]);
+  }, [collectionId, itemId, setSavedImageId]);
 
   const canSave = title.trim().length > 0 && !saving;
 
@@ -56,24 +53,16 @@ export default function ItemFormScreen() {
       return;
     }
     setSaving(true);
-    let storedImageName: string | null = null;
     try {
-      const savedPhoto = await photo.savePhoto();
-      storedImageName = savedPhoto.storedImageName;
-      const input = {
-        title,
-        description: description.trim() || null,
-        imageName: savedPhoto.imageName,
-        tags,
-      };
+      const photoUpdate = await photo.getPhotoUpdate();
+      const fields = { title, description: description.trim() || null, tags };
       if (itemId === null) {
-        await createItem(db, collectionId, input);
+        await createItem(collectionId, fields, photoUpdate);
       } else {
-        await updateItem(db, itemId, input);
+        await updateItem(itemId, fields, photoUpdate);
       }
       router.back();
     } catch (error) {
-      deleteImage(storedImageName);
       setSaving(false);
       showSaveError(error);
     }
@@ -93,6 +82,7 @@ export default function ItemFormScreen() {
         <TextInput
           value={title}
           onChangeText={setTitle}
+          accessibilityLabel="Title"
           placeholder="Required"
           placeholderTextColor={colors.textMuted}
           style={styles.input}
@@ -104,6 +94,7 @@ export default function ItemFormScreen() {
         <TextInput
           value={description}
           onChangeText={setDescription}
+          accessibilityLabel="Description"
           placeholder="Optional"
           placeholderTextColor={colors.textMuted}
           multiline
@@ -119,12 +110,13 @@ export default function ItemFormScreen() {
 
       <View style={styles.field}>
         <Text style={styles.label}>Photo</Text>
-        <PhotoField previewUri={photo.previewUri} onPress={photo.openMenu} />
+        <PhotoField previewUri={photo.previewUri} onPick={photo.pickPhoto} onRemove={photo.removePhoto} />
       </View>
 
       <Pressable
         onPress={handleSave}
         disabled={!canSave}
+        accessibilityRole="button"
         style={({ pressed }) => [styles.button, !canSave && styles.buttonDisabled, pressed && styles.pressed]}
       >
         <Text style={styles.buttonText}>{saving ? 'Saving…' : 'Save'}</Text>

@@ -1,11 +1,16 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, radius, spacing } from '../../theme';
+import { colors, radius, spacing, tileWidths } from '../../theme';
 
 /** Styles for the home screen (collection grid). */
 export const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  headerButton: {
+    color: colors.accent,
+    fontSize: 16,
+    paddingHorizontal: spacing.sm,
   },
   list: {
     padding: spacing.lg,
@@ -16,13 +21,22 @@ export const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   card: {
-    flex: 1,
-    maxWidth: '50%',
     backgroundColor: colors.surface,
     borderRadius: radius.md,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  cardPortrait: {
+    flex: 1,
+    maxWidth: '50%',
+  },
+  cardLandscape: {
+    width: tileWidths.collection,
+  },
+  cardSpacer: {
+    backgroundColor: 'transparent',
+    borderColor: 'transparent',
   },
   pressed: {
     opacity: 0.8,

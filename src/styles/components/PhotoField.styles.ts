@@ -1,9 +1,12 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, radius } from '../../theme';
+import { colors, radius, spacing } from '../../theme';
 
 /** Styles for `PhotoField`. */
 export const styles = StyleSheet.create({
+  container: {
+    gap: spacing.sm,
+  },
   box: {
     width: '100%',
     aspectRatio: 4 / 3,
@@ -23,5 +26,12 @@ export const styles = StyleSheet.create({
   hint: {
     fontSize: 16,
     color: colors.textMuted,
+  },
+  removeButton: {
+    alignSelf: 'flex-start',
+  },
+  removeText: {
+    fontSize: 14,
+    color: colors.danger,
   },
 });

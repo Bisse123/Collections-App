@@ -18,6 +18,12 @@ export const spacing = {
   xl: 24,
 };
 
+/** Fixed tile widths used in landscape layout; in portrait, tiles stretch to fill the row. */
+export const tileWidths = {
+  collection: 180,
+  item: 360,
+};
+
 export const radius = {
   sm: 8,
   md: 12,
