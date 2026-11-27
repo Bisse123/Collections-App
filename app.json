@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Collections-App",
+    "name": "Collections",
     "slug": "Collections-App",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,6 +20,20 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-sqlite",
+      "expo-image",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Collections to use your photos so you can add them to your items.",
+          "cameraPermission": "Allow Collections to use the camera so you can photograph your items.",
+          "microphonePermission": false
+        }
+      ]
+    ],
+    "scheme": "collections"
   }
 }
