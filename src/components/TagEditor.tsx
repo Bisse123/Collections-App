@@ -1,8 +1,9 @@
-import { useState } from 'react';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Text, TextInput, View, type TextInputInstance } from 'react-native';
 
-import { normalizeTags, parseTagText } from '../lib/tags';
-import { colors, radius, spacing } from '../theme';
+import { normalizeTag, normalizeTags } from '../lib/tags';
+import { colors } from '../theme';
+import { styles } from '../styles/components/TagEditor.styles';
 import { TagChip } from './TagChip';
 
 interface TagEditorProps {
@@ -13,34 +14,34 @@ interface TagEditorProps {
 }
 
 /**
- * Edits a list of tags. Typing a comma or pressing return turns the typed text into tags; existing
- * tags are removed by tapping them; suggestions are added by tapping them.
+ * Edits a list of tags. The text field holds one tag, which is added when the keyboard's
+ * done/checkmark key is pressed; the whole text is the tag, commas included. Leaving the field any
+ * other way keeps the typed text without adding it. Adding a tag, typed or tapped from the
+ * suggestions, closes the keyboard. Existing tags are removed by tapping them.
  * @param props See `TagEditorProps`.
  * @returns The editor element. Calls `onChange` with the full new tag list on every change.
  */
 export function TagEditor({ tags, onChange, suggestions }: TagEditorProps) {
   const [draft, setDraft] = useState('');
+  const inputRef = useRef<TextInputInstance>(null);
 
-  const addTags = (newTags: string[]) => {
-    if (newTags.length > 0) {
-      onChange(normalizeTags([...tags, ...newTags]));
+  const addTag = (tag: string) => {
+    const newTags = normalizeTags([...tags, tag]);
+    if (newTags.length > tags.length) {
+      onChange(newTags);
     }
   };
 
-  const handleChangeText = (text: string) => {
-    if (text.includes(',')) {
-      const parts = text.split(',');
-      const remainder = parts.pop() ?? '';
-      addTags(parseTagText(parts.join(',')));
-      setDraft(remainder);
-    } else {
-      setDraft(text);
+  const handleSubmitEditing = () => {
+    if (normalizeTag(draft)) {
+      addTag(draft);
+      setDraft('');
     }
   };
 
-  const handleSubmit = () => {
-    addTags(parseTagText(draft));
-    setDraft('');
+  const handleSuggestionPress = (tag: string) => {
+    addTag(tag);
+    inputRef.current?.blur();
   };
 
   const unusedSuggestions = suggestions.filter((tag) => !tags.includes(tag));
@@ -61,16 +62,16 @@ export function TagEditor({ tags, onChange, suggestions }: TagEditorProps) {
         </View>
       )}
       <TextInput
+        ref={inputRef}
         value={draft}
-        onChangeText={handleChangeText}
-        onSubmitEditing={handleSubmit}
-        onBlur={handleSubmit}
-        placeholder="Add tags, separated by commas"
+        onChangeText={setDraft}
+        onSubmitEditing={handleSubmitEditing}
+        placeholder="Add a tag"
         placeholderTextColor={colors.textMuted}
         autoCapitalize="none"
         autoCorrect={false}
         returnKeyType="done"
-        submitBehavior="submit"
+        submitBehavior="blurAndSubmit"
         style={styles.input}
       />
       {unusedSuggestions.length > 0 && (
@@ -78,7 +79,7 @@ export function TagEditor({ tags, onChange, suggestions }: TagEditorProps) {
           <Text style={styles.suggestionLabel}>Used in this collection</Text>
           <View style={styles.chipRow}>
             {unusedSuggestions.map((tag) => (
-              <TagChip key={tag} label={`+ ${tag}`} onPress={() => addTags([tag])} />
+              <TagChip key={tag} label={`+ ${tag}`} onPress={() => handleSuggestionPress(tag)} />
             ))}
           </View>
         </>
@@ -86,29 +87,3 @@ export function TagEditor({ tags, onChange, suggestions }: TagEditorProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
-  chipRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 16,
-    color: colors.text,
-  },
-  suggestionLabel: {
-    fontSize: 13,
-    color: colors.textMuted,
-    marginTop: spacing.xs,
-  },
-});

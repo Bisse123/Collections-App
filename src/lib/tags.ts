@@ -30,15 +30,6 @@ export function normalizeTags(tags: string[]): string[] {
 }
 
 /**
- * Splits text typed into the tag field on commas into separate tags.
- * @param text Text such as "rare, holo,first edition".
- * @returns The normalized tags found in the text.
- */
-export function parseTagText(text: string): string[] {
-  return normalizeTags(text.split(','));
-}
-
-/**
  * Counts how many items carry each tag.
  * @param items The items to count over.
  * @returns Tag/count pairs sorted by count (highest first), then alphabetically.

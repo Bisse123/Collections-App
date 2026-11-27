@@ -1,8 +1,8 @@
 import { Image } from 'expo-image';
-import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { imageUri } from '../storage/images';
-import { colors } from '../theme';
+import { styles } from '../styles/components/Thumbnail.styles';
 
 interface ThumbnailProps {
   /** Stored image file name, or null to show the placeholder. */
@@ -31,23 +31,3 @@ export function Thumbnail({ imageName, fallbackText, style }: ThumbnailProps) {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  frame: {
-    overflow: 'hidden',
-    backgroundColor: colors.placeholder,
-  },
-  fill: {
-    width: '100%',
-    height: '100%',
-  },
-  placeholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  letter: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-});
