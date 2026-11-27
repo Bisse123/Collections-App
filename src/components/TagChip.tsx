@@ -24,7 +24,7 @@ export function TagChip({ label, selected = false, count, removable = false, onP
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole={onPress ? 'button' : 'text'}
-      accessibilityState={{ selected }}
+      aria-selected={selected}
       style={({ pressed }) => [
         styles.chip,
         selected && styles.chipSelected,

@@ -1,14 +1,15 @@
 import { Image } from 'expo-image';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
-import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { EmptyState } from '../../components/EmptyState';
 import { TagChip } from '../../components/TagChip';
-import { deleteItem, getItem, type Item } from '../../db/repository';
+import { deleteItem, getItem } from '../../data/collections';
+import type { Item } from '../../data/types';
+import { useImageUrl } from '../../hooks/useImageUrl';
 import { showSaveError } from '../../lib/errors';
-import { imageUri } from '../../storage/images';
+import { confirmAsync } from '../../platform/dialogs';
 import { styles } from '../../styles/screens/item.styles';
 
 /**
@@ -16,17 +17,16 @@ import { styles } from '../../styles/screens/item.styles';
  * @returns The screen element.
  */
 export default function ItemScreen() {
-  const db = useSQLiteContext();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const itemId = Number(id);
+  const { id: itemId } = useLocalSearchParams<{ id: string }>();
 
   const [item, setItem] = useState<Item | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const imageUrl = useImageUrl(item?.imageId ?? null);
 
   useFocusEffect(
     useCallback(() => {
       let active = true;
-      getItem(db, itemId).then((loadedItem) => {
+      getItem(itemId).then((loadedItem) => {
         if (active) {
           setItem(loadedItem);
           setLoaded(true);
@@ -35,28 +35,28 @@ export default function ItemScreen() {
       return () => {
         active = false;
       };
-    }, [db, itemId]),
+    }, [itemId]),
   );
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!item) {
       return;
     }
-    Alert.alert(`Delete "${item.title}"?`, 'This permanently deletes the item and its photo.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteItem(db, item.id);
-            router.back();
-          } catch (error) {
-            showSaveError(error);
-          }
-        },
-      },
-    ]);
+    const confirmed = await confirmAsync({
+      title: `Delete "${item.title}"?`,
+      message: 'This permanently deletes the item and its photo.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!confirmed) {
+      return;
+    }
+    try {
+      await deleteItem(item.id);
+      router.back();
+    } catch (error) {
+      showSaveError(error);
+    }
   };
 
   if (loaded && !item) {
@@ -68,33 +68,38 @@ export default function ItemScreen() {
       <Stack.Screen
         options={{
           title: '',
-          headerRight: () =>
-            item ? (
-              <Pressable
-                hitSlop={8}
-                onPress={() =>
-                  router.push({
-                    pathname: '/item-form',
-                    params: { collectionId: String(item.collectionId), itemId: String(item.id) },
-                  })
-                }
-              >
-                <Text style={styles.headerButton}>Edit</Text>
-              </Pressable>
-            ) : null,
+          headerRight: () => (
+            <Pressable
+              hitSlop={8}
+              accessibilityRole="button"
+              disabled={!item}
+              onPress={() =>
+                item &&
+                router.push({
+                  pathname: '/item-form',
+                  params: { collectionId: item.collectionId, itemId: item.id },
+                })
+              }
+            >
+              <Text style={styles.headerButton}>Edit</Text>
+            </Pressable>
+          ),
         }}
       />
       {item && (
         <>
-          {item.imageName && (
+          {item.imageId && (
             <Image
-              source={{ uri: imageUri(item.imageName) }}
+              source={imageUrl ? { uri: imageUrl } : undefined}
               style={styles.image}
               contentFit="cover"
               transition={150}
+              accessibilityLabel={`Photo of ${item.title}`}
             />
           )}
-          <Text style={styles.title}>{item.title}</Text>
+          <Text style={styles.title} accessibilityRole="header">
+            {item.title}
+          </Text>
           {item.tags.length > 0 && (
             <View style={styles.tagRow}>
               {item.tags.map((tag) => (
@@ -105,6 +110,7 @@ export default function ItemScreen() {
           {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
           <Pressable
             onPress={handleDelete}
+            accessibilityRole="button"
             style={({ pressed }) => [styles.deleteButton, pressed && styles.pressed]}
           >
             <Text style={styles.deleteText}>Delete item</Text>

@@ -11,6 +11,7 @@ export const styles = StyleSheet.create({
   headerButton: {
     color: colors.accent,
     fontSize: 16,
+    paddingHorizontal: spacing.sm,
   },
   image: {
     width: '100%',

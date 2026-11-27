@@ -1,11 +1,16 @@
 import { StyleSheet } from 'react-native';
 
-import { colors, radius, spacing } from '../../theme';
+import { colors, radius, spacing, tileWidths } from '../../theme';
 
 /** Styles for the collection screen (item list, search and tag filters). */
 export const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  headerButtons: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    paddingHorizontal: spacing.sm,
   },
   headerButton: {
     color: colors.accent,
@@ -104,6 +109,12 @@ export const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  rowLandscape: {
+    width: tileWidths.item,
+  },
+  columns: {
+    gap: spacing.sm,
   },
   pressed: {
     opacity: 0.8,

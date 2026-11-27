@@ -1,4 +1,4 @@
-import type { Item } from '../db/repository';
+import type { Item } from '../data/types';
 
 /** How multiple selected tags combine when filtering. */
 export type TagMatchMode = 'any' | 'all';

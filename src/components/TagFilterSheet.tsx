@@ -57,7 +57,7 @@ export function TagFilterSheet({
       <SafeAreaView style={styles.sheet} edges={['top', 'bottom']}>
         <View style={styles.header}>
           <Text style={styles.title}>Filter by tag</Text>
-          <Pressable onPress={handleClose} hitSlop={8}>
+          <Pressable onPress={handleClose} hitSlop={8} accessibilityRole="button">
             <Text style={styles.done}>Done</Text>
           </Pressable>
         </View>
@@ -79,7 +79,7 @@ export function TagFilterSheet({
             {selectedTags.length === 0 ? 'No tags selected' : `${selectedTags.length} selected`}
           </Text>
           {selectedTags.length > 0 && (
-            <Pressable onPress={onClear} hitSlop={8}>
+            <Pressable onPress={onClear} hitSlop={8} accessibilityRole="button">
               <Text style={styles.clear}>Clear all</Text>
             </Pressable>
           )}
@@ -98,7 +98,7 @@ export function TagFilterSheet({
               <Pressable
                 onPress={() => onToggleTag(tag)}
                 accessibilityRole="checkbox"
-                accessibilityState={{ checked: selected }}
+                aria-checked={selected}
                 style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               >
                 <View style={[styles.check, selected && styles.checkSelected]}>
