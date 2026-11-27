@@ -8,6 +8,7 @@ import {
   createCollection,
   dismissNextDialog,
   openHome,
+  openItem,
   rows,
   saveForm,
   PHOTO,
@@ -87,7 +88,7 @@ test.describe('items', () => {
 
   test('edits an item', async ({ page }) => {
     await addItem(page, { title: 'Charizard', description: 'Old text', tags: ['rare', 'holo'], photo: PHOTO });
-    await itemRow(page, 'Charizard').click();
+    await openItem(page, 'Charizard');
     await page.getByRole('button', { name: 'Edit' }).click();
 
     await expect(page.getByLabel('Title')).toHaveValue('Charizard');
@@ -110,7 +111,7 @@ test.describe('items', () => {
 
   test('adds a photo to an existing item', async ({ page }) => {
     await addItem(page, { title: 'Mew' });
-    await itemRow(page, 'Mew').click();
+    await openItem(page, 'Mew');
     await page.getByRole('button', { name: 'Edit' }).click();
     await choosePhoto(page);
     await saveForm(page);
@@ -121,7 +122,7 @@ test.describe('items', () => {
   test('deletes an item after confirming', async ({ page }) => {
     await addItem(page, { title: 'Charizard' });
     await addItem(page, { title: 'Pikachu' });
-    await itemRow(page, 'Charizard').click();
+    await openItem(page, 'Charizard');
 
     const cancelled = dismissNextDialog(page);
     await page.getByRole('button', { name: 'Delete item' }).click();
@@ -175,7 +176,7 @@ test.describe('items', () => {
     const big = { name: 'big.png', mimeType: 'image/png', buffer: Buffer.from(dataUrl.split(',')[1], 'base64') };
 
     await addItem(page, { title: 'Poster', photo: big });
-    await itemRow(page, 'Poster').click();
+    await openItem(page, 'Poster');
 
     const photo = page.getByRole('img', { name: 'Photo of Poster' });
     await expect(photo).toBeVisible();

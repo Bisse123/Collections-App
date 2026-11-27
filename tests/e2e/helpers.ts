@@ -149,6 +149,20 @@ export async function addItem(page: Page, item: NewItem): Promise<void> {
 }
 
 /**
+ * Opens an item from the collection screen and waits until its screen is showing. Screens lower in
+ * the stack keep their header buttons (such as "Edit") in the page, hidden, so acting before the
+ * item screen appears could pick up the collection screen's button instead.
+ * @param page The page, showing a collection.
+ * @param title The item's title.
+ * @returns Resolves once the item's title heading and "Delete item" button are visible.
+ */
+export async function openItem(page: Page, title: string): Promise<void> {
+  await page.getByRole('link', { name: title, exact: true }).click();
+  await expect(page.getByRole('heading', { name: title, exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Delete item' })).toBeVisible();
+}
+
+/**
  * Types a tag into the item form's tag field and confirms it with Enter.
  * @param page The page, showing the item form.
  * @param tag The tag text.

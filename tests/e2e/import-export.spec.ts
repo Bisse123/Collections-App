@@ -8,6 +8,7 @@ import {
   createCollection,
   exportOpenCollection,
   openHome,
+  openItem,
   PHOTO,
   rows,
   saveForm,
@@ -196,7 +197,7 @@ test.describe('import', () => {
 
   test('lets the user pick when this device has the newer edit', async ({ page }) => {
     const { file, archive } = await createAndExport(page);
-    await page.getByRole('link', { name: 'Beta' }).click();
+    await openItem(page, 'Beta');
     await page.getByRole('button', { name: 'Edit' }).click();
     await page.getByLabel('Title').fill('Beta (mine)');
     await saveForm(page);
