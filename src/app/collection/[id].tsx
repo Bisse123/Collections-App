@@ -1,15 +1,17 @@
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useMemo, useState } from 'react';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { FlatList, Pressable, Text, TextInput, View } from 'react-native';
 
 import { EmptyState } from '../../components/EmptyState';
 import { Fab } from '../../components/Fab';
 import { TagChip } from '../../components/TagChip';
+import { TagFilterSheet } from '../../components/TagFilterSheet';
 import { Thumbnail } from '../../components/Thumbnail';
 import { getCollection, listItems, type Collection, type Item } from '../../db/repository';
 import { countTags, filterItems, type TagMatchMode } from '../../lib/tags';
-import { colors, radius, spacing } from '../../theme';
+import { colors } from '../../theme';
+import { styles } from '../../styles/screens/collection.styles';
 
 /**
  * One collection's items, with a text search and tag filters.
@@ -26,6 +28,7 @@ export default function CollectionScreen() {
   const [query, setQuery] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [matchMode, setMatchMode] = useState<TagMatchMode>('any');
+  const [tagSheetOpen, setTagSheetOpen] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -63,31 +66,38 @@ export default function CollectionScreen() {
 
   const header = (
     <View style={styles.filters}>
-      <TextInput
-        value={query}
-        onChangeText={setQuery}
-        placeholder="Search titles and descriptions"
-        placeholderTextColor={colors.textMuted}
-        clearButtonMode="while-editing"
-        style={styles.search}
-      />
-      {tagCounts.length > 0 && (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tagRow}
-          keyboardShouldPersistTaps="handled"
-        >
-          {tagCounts.map(({ tag, count }) => (
-            <TagChip
-              key={tag}
-              label={tag}
-              count={count}
-              selected={selectedTags.includes(tag)}
-              onPress={() => toggleTag(tag)}
-            />
+      <View style={styles.searchRow}>
+        <TextInput
+          value={query}
+          onChangeText={setQuery}
+          placeholder="Search titles and descriptions"
+          placeholderTextColor={colors.textMuted}
+          clearButtonMode="while-editing"
+          style={styles.search}
+        />
+        {tagCounts.length > 0 && (
+          <Pressable
+            onPress={() => setTagSheetOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Filter by tag"
+            style={({ pressed }) => [
+              styles.tagButton,
+              selectedTags.length > 0 && styles.tagButtonActive,
+              pressed && styles.pressed,
+            ]}
+          >
+            <Text style={[styles.tagButtonText, selectedTags.length > 0 && styles.tagButtonTextActive]}>
+              {selectedTags.length > 0 ? `Tags · ${selectedTags.length}` : 'Tags'}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+      {selectedTags.length > 0 && (
+        <View style={styles.selectedTags}>
+          {selectedTags.map((tag) => (
+            <TagChip key={tag} label={tag} selected removable onPress={() => toggleTag(tag)} />
           ))}
-        </ScrollView>
+        </View>
       )}
       {selectedTags.length > 0 && (
         <View style={styles.filterBar}>
@@ -133,7 +143,7 @@ export default function CollectionScreen() {
                 router.push({ pathname: '/collection-form', params: { id: String(collectionId) } })
               }
             >
-              <Text style={styles.headerButton}>Rename</Text>
+              <Text style={styles.headerButton}>Edit</Text>
             </Pressable>
           ),
         }}
@@ -143,6 +153,7 @@ export default function CollectionScreen() {
         keyExtractor={(item) => String(item.id)}
         ListHeaderComponent={items.length > 0 ? header : undefined}
         contentContainerStyle={styles.list}
+        contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           !loaded ? undefined : items.length === 0 ? (
@@ -181,108 +192,14 @@ export default function CollectionScreen() {
           router.push({ pathname: '/item-form', params: { collectionId: String(collectionId) } })
         }
       />
+      <TagFilterSheet
+        visible={tagSheetOpen}
+        tagCounts={tagCounts}
+        selectedTags={selectedTags}
+        onToggleTag={toggleTag}
+        onClear={() => setSelectedTags([])}
+        onClose={() => setTagSheetOpen(false)}
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  headerButton: {
-    color: colors.accent,
-    fontSize: 16,
-  },
-  list: {
-    padding: spacing.lg,
-    paddingBottom: 120,
-    gap: spacing.sm,
-  },
-  filters: {
-    gap: spacing.md,
-    marginBottom: spacing.sm,
-  },
-  search: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    fontSize: 16,
-    color: colors.text,
-  },
-  tagRow: {
-    gap: spacing.sm,
-  },
-  filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  segment: {
-    flexDirection: 'row',
-    backgroundColor: colors.placeholder,
-    borderRadius: radius.pill,
-    padding: 2,
-  },
-  segmentOption: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-  },
-  segmentOptionActive: {
-    backgroundColor: colors.surface,
-  },
-  segmentText: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  segmentTextActive: {
-    color: colors.text,
-    fontWeight: '600',
-  },
-  clear: {
-    color: colors.accent,
-    fontSize: 14,
-  },
-  resultCount: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.sm,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  thumb: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.sm,
-  },
-  rowText: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  description: {
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  tags: {
-    fontSize: 13,
-    color: colors.accent,
-  },
-});

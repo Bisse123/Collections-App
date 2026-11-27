@@ -2,14 +2,14 @@ import { Image } from 'expo-image';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { EmptyState } from '../../components/EmptyState';
 import { TagChip } from '../../components/TagChip';
 import { deleteItem, getItem, type Item } from '../../db/repository';
 import { showSaveError } from '../../lib/errors';
 import { imageUri } from '../../storage/images';
-import { colors, radius, spacing } from '../../theme';
+import { styles } from '../../styles/screens/item.styles';
 
 /**
  * Full view of one item: image, title, description and tags, with edit and delete.
@@ -64,7 +64,7 @@ export default function ItemScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <ScrollView contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
       <Stack.Screen
         options={{
           title: '',
@@ -114,51 +114,3 @@ export default function ItemScreen() {
     </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  content: {
-    padding: spacing.lg,
-    gap: spacing.lg,
-  },
-  headerButton: {
-    color: colors.accent,
-    fontSize: 16,
-  },
-  image: {
-    width: '100%',
-    aspectRatio: 1,
-    borderRadius: radius.md,
-    backgroundColor: colors.placeholder,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.text,
-  },
-  tagRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 23,
-    color: colors.text,
-  },
-  deleteButton: {
-    marginTop: spacing.xl,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    borderRadius: radius.sm,
-    borderWidth: 1,
-    borderColor: colors.danger,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
-  deleteText: {
-    color: colors.danger,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

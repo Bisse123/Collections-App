@@ -8,9 +8,27 @@ export interface Collection {
   name: string;
   createdAt: number;
   itemCount: number;
-  /** File name of the most recently updated item image, used as the collection's cover. */
+  /** File name of the photo chosen for the collection itself; resolve with `imageUri`. */
+  imageName: string | null;
+  /**
+   * File name of the image shown on the collection's card: its own photo when it has one,
+   * otherwise the most recently updated item image.
+   */
   coverImage: string | null;
 }
+
+const COLLECTION_COLUMNS = `
+  c.id,
+  c.name,
+  c.created_at AS createdAt,
+  c.image_name AS imageName,
+  (SELECT COUNT(*) FROM items i WHERE i.collection_id = c.id) AS itemCount,
+  COALESCE(
+    c.image_name,
+    (SELECT i.image_name FROM items i
+      WHERE i.collection_id = c.id AND i.image_name IS NOT NULL
+      ORDER BY i.updated_at DESC LIMIT 1)
+  ) AS coverImage`;
 
 export interface Item {
   id: number;
@@ -57,17 +75,9 @@ const ITEM_COLUMNS = `
  * @returns All collections sorted by name, case-insensitively.
  */
 export async function listCollections(db: SQLiteDatabase): Promise<Collection[]> {
-  return db.getAllAsync<Collection>(`
-    SELECT
-      c.id,
-      c.name,
-      c.created_at AS createdAt,
-      (SELECT COUNT(*) FROM items i WHERE i.collection_id = c.id) AS itemCount,
-      (SELECT i.image_name FROM items i
-        WHERE i.collection_id = c.id AND i.image_name IS NOT NULL
-        ORDER BY i.updated_at DESC LIMIT 1) AS coverImage
-    FROM collections c
-    ORDER BY c.name COLLATE NOCASE`);
+  return db.getAllAsync<Collection>(
+    `SELECT ${COLLECTION_COLUMNS} FROM collections c ORDER BY c.name COLLATE NOCASE`,
+  );
 }
 
 /**
@@ -78,13 +88,7 @@ export async function listCollections(db: SQLiteDatabase): Promise<Collection[]>
  */
 export async function getCollection(db: SQLiteDatabase, id: number): Promise<Collection | null> {
   return db.getFirstAsync<Collection>(
-    `SELECT
-      c.id,
-      c.name,
-      c.created_at AS createdAt,
-      (SELECT COUNT(*) FROM items i WHERE i.collection_id = c.id) AS itemCount,
-      NULL AS coverImage
-    FROM collections c WHERE c.id = ?`,
+    `SELECT ${COLLECTION_COLUMNS} FROM collections c WHERE c.id = ?`,
     id,
   );
 }
@@ -93,37 +97,65 @@ export async function getCollection(db: SQLiteDatabase, id: number): Promise<Col
  * Creates a new, empty collection.
  * @param db The app database.
  * @param name The collection's display name; must be non-blank (it is trimmed).
+ * @param imageName File name of the collection's photo from `storeImage`, or null for none.
  * @returns The new collection's id. Inserts a row into `collections`.
  */
-export async function createCollection(db: SQLiteDatabase, name: string): Promise<number> {
+export async function createCollection(
+  db: SQLiteDatabase,
+  name: string,
+  imageName: string | null,
+): Promise<number> {
   const result = await db.runAsync(
-    'INSERT INTO collections (name, created_at) VALUES (?, ?)',
+    'INSERT INTO collections (name, image_name, created_at) VALUES (?, ?, ?)',
     name.trim(),
+    imageName,
     Date.now(),
   );
   return result.lastInsertRowId;
 }
 
 /**
- * Renames a collection.
+ * Saves a collection's name and photo.
  * @param db The app database.
  * @param id The collection's id.
  * @param name The new display name; must be non-blank (it is trimmed).
- * @returns Resolves once saved. Updates the row in `collections`.
+ * @param imageName File name of the collection's photo from `storeImage`, or null for none.
+ * @returns Resolves once saved. Updates the row in `collections` and deletes the previous photo
+ * file if the photo was replaced or removed.
  */
-export async function renameCollection(db: SQLiteDatabase, id: number, name: string): Promise<void> {
-  await db.runAsync('UPDATE collections SET name = ? WHERE id = ?', name.trim(), id);
+export async function updateCollection(
+  db: SQLiteDatabase,
+  id: number,
+  name: string,
+  imageName: string | null,
+): Promise<void> {
+  const previous = await db.getFirstAsync<{ imageName: string | null }>(
+    'SELECT image_name AS imageName FROM collections WHERE id = ?',
+    id,
+  );
+  await db.runAsync(
+    'UPDATE collections SET name = ?, image_name = ? WHERE id = ?',
+    name.trim(),
+    imageName,
+    id,
+  );
+  if (previous?.imageName && previous.imageName !== imageName) {
+    deleteImage(previous.imageName);
+  }
 }
 
 /**
- * Deletes a collection together with all of its items, their tags and their images.
+ * Deletes a collection together with its photo and all of its items, their tags and their images.
  * @param db The app database.
  * @param id The collection's id.
  * @returns Resolves once deleted. Removes database rows and image files.
  */
 export async function deleteCollection(db: SQLiteDatabase, id: number): Promise<void> {
   const images = await db.getAllAsync<{ imageName: string }>(
-    'SELECT image_name AS imageName FROM items WHERE collection_id = ? AND image_name IS NOT NULL',
+    `SELECT image_name AS imageName FROM items WHERE collection_id = ? AND image_name IS NOT NULL
+    UNION ALL
+    SELECT image_name FROM collections WHERE id = ? AND image_name IS NOT NULL`,
+    id,
     id,
   );
   await db.runAsync('DELETE FROM collections WHERE id = ?', id);

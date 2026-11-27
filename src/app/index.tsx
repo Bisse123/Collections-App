@@ -1,17 +1,17 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useCallback, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, Pressable, Text, View } from 'react-native';
 
 import { EmptyState } from '../components/EmptyState';
 import { Fab } from '../components/Fab';
 import { Thumbnail } from '../components/Thumbnail';
 import { deleteCollection, listCollections, type Collection } from '../db/repository';
 import { showSaveError } from '../lib/errors';
-import { colors, radius, spacing } from '../theme';
+import { styles } from '../styles/screens/home.styles';
 
 /**
- * Home screen: a grid of all collections. Tap to open one, long-press to rename or delete.
+ * Home screen: a grid of all collections. Tap to open one, long-press to edit or delete.
  * @returns The screen element.
  */
 export default function CollectionsScreen() {
@@ -33,7 +33,7 @@ export default function CollectionsScreen() {
   const handleLongPress = (collection: Collection) => {
     Alert.alert(collection.name, undefined, [
       {
-        text: 'Rename',
+        text: 'Edit',
         onPress: () =>
           router.push({ pathname: '/collection-form', params: { id: String(collection.id) } }),
       },
@@ -76,6 +76,7 @@ export default function CollectionsScreen() {
         numColumns={2}
         columnWrapperStyle={styles.row}
         contentContainerStyle={styles.list}
+        contentInsetAdjustmentBehavior="automatic"
         ListEmptyComponent={
           loaded ? (
             <EmptyState
@@ -110,46 +111,3 @@ export default function CollectionsScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-  },
-  list: {
-    padding: spacing.lg,
-    paddingBottom: 120,
-    gap: spacing.lg,
-  },
-  row: {
-    gap: spacing.lg,
-  },
-  card: {
-    flex: 1,
-    maxWidth: '50%',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  cover: {
-    width: '100%',
-    aspectRatio: 1,
-  },
-  cardText: {
-    padding: spacing.md,
-    gap: 2,
-  },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.text,
-  },
-  count: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-});

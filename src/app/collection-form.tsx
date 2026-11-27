@@ -1,14 +1,19 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useSQLiteContext } from 'expo-sqlite';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 
-import { createCollection, getCollection, renameCollection } from '../db/repository';
+import { PhotoField } from '../components/PhotoField';
+import { createCollection, getCollection, updateCollection } from '../db/repository';
+import { usePhotoPicker } from '../hooks/usePhotoPicker';
 import { showSaveError } from '../lib/errors';
-import { colors, radius, spacing } from '../theme';
+import { deleteImage } from '../storage/images';
+import { colors } from '../theme';
+import { styles } from '../styles/screens/collectionForm.styles';
 
 /**
- * Modal for creating a collection, or renaming one when an `id` route param is given.
+ * Modal for creating a collection, or editing one's name and photo when an `id` route param is
+ * given.
  * @returns The screen element.
  */
 export default function CollectionFormScreen() {
@@ -18,6 +23,8 @@ export default function CollectionFormScreen() {
 
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
+  const photo = usePhotoPicker();
+  const { setSavedImageName } = photo;
 
   useEffect(() => {
     if (collectionId === null) {
@@ -26,9 +33,10 @@ export default function CollectionFormScreen() {
     getCollection(db, collectionId).then((collection) => {
       if (collection) {
         setName(collection.name);
+        setSavedImageName(collection.imageName);
       }
     });
-  }, [db, collectionId]);
+  }, [db, collectionId, setSavedImageName]);
 
   const canSave = name.trim().length > 0 && !saving;
 
@@ -37,82 +45,61 @@ export default function CollectionFormScreen() {
       return;
     }
     setSaving(true);
+    let storedImageName: string | null = null;
     try {
+      const savedPhoto = await photo.savePhoto();
+      storedImageName = savedPhoto.storedImageName;
       if (collectionId === null) {
-        const newId = await createCollection(db, name);
+        const newId = await createCollection(db, name, savedPhoto.imageName);
         router.replace(`/collection/${newId}`);
       } else {
-        await renameCollection(db, collectionId, name);
+        await updateCollection(db, collectionId, name, savedPhoto.imageName);
         router.back();
       }
     } catch (error) {
+      deleteImage(storedImageName);
       setSaving(false);
       showSaveError(error);
     }
   };
 
   return (
-    <View style={styles.screen}>
-      <Stack.Screen options={{ title: collectionId === null ? 'New collection' : 'Rename collection' }} />
-      <Text style={styles.label}>Name</Text>
-      <TextInput
-        value={name}
-        onChangeText={setName}
-        onSubmitEditing={handleSave}
-        placeholder="e.g. Trading cards"
-        placeholderTextColor={colors.textMuted}
-        autoFocus
-        returnKeyType="done"
-        style={styles.input}
-      />
+    <ScrollView
+      contentContainerStyle={styles.content}
+      contentInsetAdjustmentBehavior="automatic"
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+    >
+      <Stack.Screen options={{ title: collectionId === null ? 'New collection' : 'Edit collection' }} />
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Name</Text>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          onSubmitEditing={handleSave}
+          placeholder="e.g. Trading cards"
+          placeholderTextColor={colors.textMuted}
+          autoFocus
+          returnKeyType="done"
+          style={styles.input}
+        />
+      </View>
+
+      <View style={styles.field}>
+        <Text style={styles.label}>Photo</Text>
+        <PhotoField previewUri={photo.previewUri} onPress={photo.openMenu} />
+      </View>
+
       <Pressable
         onPress={handleSave}
         disabled={!canSave}
         style={({ pressed }) => [styles.button, !canSave && styles.buttonDisabled, pressed && styles.pressed]}
       >
-        <Text style={styles.buttonText}>{collectionId === null ? 'Create' : 'Save'}</Text>
+        <Text style={styles.buttonText}>
+          {saving ? 'Saving…' : collectionId === null ? 'Create' : 'Save'}
+        </Text>
       </Pressable>
-    </View>
+    </ScrollView>
   );
 }
-
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  input: {
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 16,
-    color: colors.text,
-  },
-  button: {
-    marginTop: spacing.lg,
-    backgroundColor: colors.accent,
-    borderRadius: radius.sm,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  buttonDisabled: {
-    opacity: 0.4,
-  },
-  pressed: {
-    opacity: 0.8,
-  },
-  buttonText: {
-    color: colors.surface,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-});

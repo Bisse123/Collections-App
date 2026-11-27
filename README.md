@@ -29,6 +29,8 @@ npx expo-doctor
 |---|---|
 | `src/app/` | Screens (Expo Router — every file is a route) |
 | `src/components/` | Shared UI pieces (tag chips, tag editor, thumbnails, add button) |
+| `src/hooks/` | Shared form logic (picking, removing and saving a photo) |
+| `src/styles/` | Style sheets for each screen (`screens/`) and shared component (`components/`) |
 | `src/db/` | SQLite schema migrations and all database queries |
 | `src/storage/images.ts` | Copying, resolving and deleting stored photos |
 | `src/lib/` | Tag normalisation and filtering, error messages |
