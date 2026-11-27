@@ -6,15 +6,20 @@ const LANDSCAPE = { width: 1280, height: 720 };
 const PORTRAIT = { width: 500, height: 900 };
 
 /**
- * Waits for a number of elements to be on screen and measures them.
+ * Waits for a number of elements to be on screen and measures them all in one step, so a list
+ * that re-renders (for example after a resize) cannot change between measurements.
  * @param locator The elements to measure.
  * @param count How many there should be.
  * @returns Each element's position and size, in document order.
  */
 async function boxes(locator: Locator, count: number) {
   await expect(locator).toHaveCount(count);
-  const all = await locator.all();
-  return Promise.all(all.map(async (element) => (await element.boundingBox())!));
+  return locator.evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }),
+  );
 }
 
 /**

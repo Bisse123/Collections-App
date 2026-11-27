@@ -69,20 +69,22 @@ export default function ItemScreen() {
         options={{
           title: '',
           headerRight: () => (
-            <Pressable
-              hitSlop={8}
-              accessibilityRole="button"
-              disabled={!item}
-              onPress={() =>
-                item &&
-                router.push({
-                  pathname: '/item-form',
-                  params: { collectionId: item.collectionId, itemId: item.id },
-                })
-              }
-            >
-              <Text style={styles.headerButton}>Edit</Text>
-            </Pressable>
+            <View style={styles.headerButtons}>
+              <Pressable
+                hitSlop={8}
+                accessibilityRole="button"
+                disabled={!item}
+                onPress={() =>
+                  item &&
+                  router.push({
+                    pathname: '/item-form',
+                    params: { collectionId: item.collectionId, itemId: item.id },
+                  })
+                }
+              >
+                <Text style={styles.headerButton}>Edit</Text>
+              </Pressable>
+            </View>
           ),
         }}
       />

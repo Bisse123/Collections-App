@@ -8,10 +8,13 @@ export const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.lg,
   },
+  headerButtons: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing.sm,
+  },
   headerButton: {
     color: colors.accent,
     fontSize: 16,
-    paddingHorizontal: spacing.sm,
   },
   image: {
     width: '100%',
